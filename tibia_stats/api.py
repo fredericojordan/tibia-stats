@@ -35,7 +35,7 @@ def get_world(world_name: str) -> objects.World:
     )
     soup = bs4.BeautifulSoup(response.text, "html.parser")
     rows = soup.find_all("table", class_="Table1")[1].find("table").find_all("tr")
-    data = dict(r.text.replace("\xa0", " ").split(":", 1) for r in rows)
+    data = dict(utils.decode(r.text).split(":", 1) for r in rows)
     return objects.World(name=world_name, **data)
 
 
@@ -52,7 +52,7 @@ def get_character(char_name: str) -> objects.Character:
         .find("table")
     )
     rows = table.find_all("tr")
-    data = dict(r.text.replace("\xa0", " ").split(":", 1) for r in rows)
+    data = dict(utils.decode(r.text).split(":", 1) for r in rows)
     char = objects.Character(**data)
     char.world = get_world(char.world)
     return char
@@ -71,16 +71,13 @@ def get_online_characters(world: str) -> list:
         .find("table")
     )
     rows = table.find_all("tr")[1:]
-    characters = [
+    fields = ["Name", "Level", "Vocation"]
+    return [
         objects.Character(
-            Name=list(r.children)[0].text.replace("\xa0", " "),
-            Level=int(list(r.children)[1].text),
-            Vocation=list(r.children)[2].text.replace("\xa0", " "),
+            **dict(zip(fields, [utils.decode(c.text) for c in row.children]))
         )
-        for r in rows
+        for row in rows
     ]
-
-    return characters
 
 
 def plot(

@@ -1,4 +1,5 @@
 __all__ = (
+    "decode",
     "min_sharer",
     "max_sharer",
     "parse_tibian_date",
@@ -23,3 +24,7 @@ def parse_tibian_date(date: str) -> datetime.datetime:
         .replace(tzinfo=cet_timezone)
         .astimezone(datetime.timezone.utc)
     )
+
+
+def decode(input_str: str) -> str:
+    return input_str.replace("\xa0", " ")
