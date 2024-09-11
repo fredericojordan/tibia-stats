@@ -1,6 +1,10 @@
 bs4
+dash
+dash-iconify
+dash-mantine-components
 matplotlib
 numpy
+pandas
 pydantic
 requests
 rich-click

@@ -187,6 +187,34 @@ class Character(pydantic.BaseModel):
     @classmethod
     def parse_title(cls, data: dict) -> dict:
         if raw_title := data.get("Title"):
-            data["Title"], rest = raw_title.split(" (")
+            data["Title"], rest = raw_title.rsplit(" (", 1)
             data["title_count"] = int(rest.split(" ")[0])
         return data
+
+    @property
+    def max_life(self) -> int:
+        if self.level < 9:
+            return 145 + (self.level * 5)
+
+        if self.vocation in [Vocation.EK, Vocation.K]:
+            delta = 15
+        elif self.vocation in [Vocation.RP, Vocation.P]:
+            delta = 10
+        else:
+            delta = 5
+
+        return delta * (self.level - 8) + 185
+
+    @property
+    def max_mana(self) -> int:
+        if self.level < 9:
+            return 50 + (self.level * 5)
+
+        if self.vocation in [Vocation.MS, Vocation.S, Vocation.ED, Vocation.D]:
+            delta = 30
+        elif self.vocation in [Vocation.RP, Vocation.P]:
+            delta = 15
+        else:
+            delta = 5
+
+        return delta * (self.level - 8) + 90

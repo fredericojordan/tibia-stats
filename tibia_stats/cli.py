@@ -3,4 +3,5 @@ import rich_click as click
 
 @click.command()
 def main():
-    pass
+    from .app import app
+    app.run()

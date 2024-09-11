@@ -109,14 +109,14 @@ def plot(
     plt.show()
 
 
-def count_sharers(chars: list, level: int):
+def count_sharers(chars: list, level: int) -> int:
     min_lvl = utils.min_sharer(level)
     max_lvl = utils.max_sharer(level)
     levels = [c.level for c in chars]
     return sum([levels.count(i) for i in range(min_lvl, max_lvl + 1)])
 
 
-def top_sharer(chars: list):
+def top_sharer(chars: list) -> tuple:
     max_sharers = (0, 0)
     levels = [c.level for c in chars]
     for lvl in range(min(levels), max(levels)):
@@ -126,13 +126,13 @@ def top_sharer(chars: list):
     return max_sharers
 
 
-def top_percentage(chars: list, my_level: int):
+def top_percentage(chars: list, my_level: int) -> float:
     for i, c in enumerate(chars):
         if c.level < my_level:
             return i / len(chars)
 
 
-def view(world: objects.World, my_lvl: int = None, bin_size: int = 100):
+def view(world: objects.World, my_lvl: int = None, bin_size: int = 100) -> None:
     chars = get_online_characters(world.name)
 
     top_lvl = max(chars, key=lambda c: c.level)
