@@ -2,6 +2,7 @@ bs4
 dash
 dash-iconify
 dash-mantine-components
+gunicorn
 matplotlib
 numpy
 pandas
