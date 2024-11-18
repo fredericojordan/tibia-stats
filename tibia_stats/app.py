@@ -138,19 +138,30 @@ def level_graph(char, online, show_vocation: bool, lvl_group: int):
 
 
 def full_details(character_name: str, show_vocation: bool, lvl_group: int):
-    char = api.get_character(character_name)
-    online = api.get_online_characters(char.world.name)
-    return [
-        dmc.Center(
-            dmc.Card(
-                character_details(char, online),
-                withBorder=True,
-                shadow="sm",
-                radius="md",
+    try:
+        char = api.get_character(character_name)
+        online = api.get_online_characters(char.world.name)
+        return [
+            dmc.Center(
+                dmc.Card(
+                    character_details(char, online),
+                    withBorder=True,
+                    shadow="sm",
+                    radius="md",
+                )
+            ),
+            level_graph(char, online, show_vocation, lvl_group),
+        ]
+    except Exception:
+        return [
+            dmc.Center(
+                dmc.Alert(
+                    icon=DashIconify(icon="mdi:account-warning"),
+                    children=f"Unable to fetch character {character_name!r}",
+                    color="red",
+                ),
             )
-        ),
-        level_graph(char, online, show_vocation, lvl_group),
-    ]
+        ]
 
 
 dash._dash_renderer._set_react_version("18.2.0")
