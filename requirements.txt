@@ -3,6 +3,7 @@ dash
 dash-iconify
 dash-mantine-components
 gunicorn
+humanize
 matplotlib
 numpy
 pandas

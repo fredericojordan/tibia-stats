@@ -3,6 +3,7 @@ import enum
 import typing
 
 import bs4
+import humanize
 import pydantic
 
 from . import utils
@@ -264,3 +265,7 @@ class Character(pydantic.BaseModel):
     @property
     def max_sharing_lvl(self) -> int:
         return utils.max_sharer(self.level)
+
+    @property
+    def last_login_human(self) -> str:
+        return f"last login {humanize.naturaldelta(datetime.datetime.now(datetime.UTC) - self.last_login)} ago"

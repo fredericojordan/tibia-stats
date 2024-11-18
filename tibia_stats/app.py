@@ -51,13 +51,19 @@ def character_details(character, online):
         [
             dmc.Group(
                 [
-                    dmc.Title(character.name, order=1),
-                    dmc.Badge(
-                        character.level,
-                        color=color,
-                        variant="dot",
-                        size="xl",
+                    dmc.Tooltip(
+                        label=character.last_login_human,
+                        withArrow=True,
+                        children=[
+                            dmc.Badge(
+                                character.level,
+                                color=color,
+                                variant="dot",
+                                size="xl",
+                            ),
+                        ],
                     ),
+                    dmc.Title(character.name, order=1),
                 ],
                 align="center",
             ),
@@ -135,7 +141,14 @@ def full_details(character_name: str, show_vocation: bool, lvl_group: int):
     char = api.get_character(character_name)
     online = api.get_online_characters(char.world.name)
     return [
-        dmc.Center(character_details(char, online)),
+        dmc.Center(
+            dmc.Card(
+                character_details(char, online),
+                withBorder=True,
+                shadow="sm",
+                radius="md",
+            )
+        ),
         level_graph(char, online, show_vocation, lvl_group),
     ]
 
@@ -154,7 +167,7 @@ grid_options = dmc.Group(
             value="50",
             size="m",
         ),
-        dmc.Checkbox(label="Show vocation", id="show-vocation", checked=True),
+        dmc.Checkbox(label="Show vocations", id="show-vocation", checked=True),
     ],
     align="flex-end",
 )
