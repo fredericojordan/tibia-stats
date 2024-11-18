@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 from dash_iconify import DashIconify
 
-from . import api, objects, utils
+from . import api, objects
 
 
 def vocation_badge(vocation):
@@ -44,30 +44,54 @@ def vocation_badge(vocation):
     )
 
 
-def character_details(character):
+def character_details(character, online):
+    is_online = any(online_char.name == character.name for online_char in online)
+    color = "green" if is_online else "gray"
     return dmc.Stack(
         [
             dmc.Group(
                 [
                     dmc.Title(character.name, order=1),
                     dmc.Badge(
-                        character.level, color="black", variant="light", size="xl"
+                        character.level,
+                        color=color,
+                        variant="dot",
+                        size="xl",
                     ),
                 ],
                 align="center",
             ),
-            vocation_badge(character.vocation),
+            dmc.Group(
+                [
+                    vocation_badge(character.vocation),
+                    dmc.Badge(
+                        character.achievements,
+                        color="goldenrod",
+                        leftSection=DashIconify(icon="mdi:star"),
+                    ),
+                ]
+            ),
             dmc.Group(
                 [
                     dmc.Badge(
-                        character.max_life,
+                        character.life,
                         color="red",
-                        leftSection=DashIconify(icon="mdi:drop"),
+                        leftSection=DashIconify(icon="mdi:heart"),
                     ),
                     dmc.Badge(
-                        character.max_mana,
+                        character.mana,
                         color="blue",
-                        leftSection=DashIconify(icon="mdi:flask"),
+                        leftSection=DashIconify(icon="mdi:lightning-bolt"),
+                    ),
+                    dmc.Badge(
+                        character.cap,
+                        color="tan",
+                        leftSection=DashIconify(icon="mdi:weight"),
+                    ),
+                    dmc.Badge(
+                        f"{character.min_sharing_lvl}-{character.max_sharing_lvl}",
+                        color="gray",
+                        leftSection=DashIconify(icon="mdi:shield"),
                     ),
                 ]
             ),
@@ -75,8 +99,7 @@ def character_details(character):
     )
 
 
-def level_graph(char, show_vocation: bool):
-    online = api.get_online_characters(char.world.name)
+def level_graph(char, online, show_vocation: bool, lvl_group: int):
     chars = pd.DataFrame.from_records([c.model_dump() for c in online])
     pct = api.top_percentage(online, char.level)
     title = f"Top {100*pct:.2f}% of {len(online)} Online Chars in {char.world.name}"
@@ -85,8 +108,8 @@ def level_graph(char, show_vocation: bool):
         chars,
         marginal="rug",
         x="level",
-        nbins=28,
-        range_x=[0, 2800],
+        nbins=int(3000/lvl_group),
+        range_x=[0, 3000],
         # color_discrete_sequence=[char.world.color],
         title=title,
         hover_name="name",
@@ -94,8 +117,8 @@ def level_graph(char, show_vocation: bool):
     )
     fig.add_vline(x=char.level)
     fig.add_vrect(
-        x0=utils.min_sharer(char.level),
-        x1=utils.max_sharer(char.level),
+        x0=char.min_sharing_lvl,
+        x1=char.max_sharing_lvl,
         line_width=0,
         fillcolor="blue",
         opacity=0.1,
@@ -103,27 +126,43 @@ def level_graph(char, show_vocation: bool):
     return dash.dcc.Graph(figure=fig)
 
 
-def full_details(character_name: str, show_vocation: bool):
+def full_details(character_name: str, show_vocation: bool, lvl_group: int):
     char = api.get_character(character_name)
+    online = api.get_online_characters(char.world.name)
     return [
-        dmc.Center(character_details(char)),
-        level_graph(char, show_vocation),
+        dmc.Center(character_details(char, online)),
+        level_graph(char, online, show_vocation, lvl_group),
     ]
 
 
 dash._dash_renderer._set_react_version("18.2.0")
+
+grid_options = dmc.Group(
+    [
+        dmc.Checkbox(label="Show vocation", id="show-vocation", checked=True),
+        dmc.Select(label="Level Group", id="lvl-group", data=[10, 25, 50, 100, 200], value=50),
+    ]
+)
 
 app = dash.Dash()
 app.layout = dmc.MantineProvider(
     dmc.Stack(
         [
             dmc.LoadingOverlay(id="loading-overlay"),
-            dmc.Stack(
-                [
-                    dmc.TextInput(id="char-name"),
-                    dmc.Checkbox(label="Show vocation", id="show-vocation"),
-                    dmc.Group(dmc.Button("Submit", id="char-submit")),
-                ]
+            dmc.Center(
+                dmc.Card(
+                    dmc.Stack(
+                        [
+                            dmc.Group(
+                                [
+                                    dmc.TextInput(id="char-name", placeholder="Character name"),
+                                    dmc.Button("Submit", id="char-submit"),
+                                ]
+                            ),
+                            grid_options,
+                        ]
+                    ),
+                ),
             ),
             dmc.Stack([], id="char-details"),
         ],
@@ -151,13 +190,14 @@ dash.clientside_callback(
     dash.Input("char-submit", "n_clicks"),
     dash.State("char-name", "value"),
     dash.State("show-vocation", "checked"),
+    dash.State("lvl-group", "value"),
     prevent_initial_call=True,
 )
-def populate_details(_n, char_name, show_vocation):
+def populate_details(_n, char_name, show_vocation, lvl_group):
     if not char_name:
         return dash.no_update, False
 
-    return full_details(char_name, show_vocation), False
+    return full_details(char_name, show_vocation, lvl_group), False
 
 
 if __name__ == "__main__":

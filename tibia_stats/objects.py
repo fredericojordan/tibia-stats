@@ -2,6 +2,7 @@ import datetime
 import enum
 import typing
 
+import bs4
 import pydantic
 
 from . import utils
@@ -64,6 +65,13 @@ class World(pydantic.BaseModel):
         default=None, validation_alias="Game World Type"
     )
     additional_info: str | None = pydantic.Field(default=None)
+
+    @classmethod
+    def from_world_page(cls, world_page: str, **kw) -> "World":
+        soup = bs4.BeautifulSoup(world_page, "html.parser")
+        rows = soup.find_all("table", class_="Table1")[1].find("table").find_all("tr")
+        data = dict(utils.decode(r.text).split(":", 1) for r in rows)
+        return cls(**data, **kw)
 
     @pydantic.field_validator("battle_eye", mode="before")
     @classmethod
@@ -175,6 +183,18 @@ class Character(pydantic.BaseModel):
         default=None, validation_alias="Account Status"
     )
 
+    @classmethod
+    def from_character_page(cls, character_page: str) -> "Character":
+        soup = bs4.BeautifulSoup(character_page, "html.parser")
+        table = (
+            soup.find("table", class_="Table3")
+            .find("div", class_="TableContentContainer")
+            .find("table")
+        )
+        rows = table.find_all("tr")
+        data = dict(utils.decode(r.text).split(":", 1) for r in rows)
+        return cls(**data)
+
     @pydantic.field_validator("last_login", mode="before")
     @classmethod
     def parse_last_login(cls, last_login: str | None) -> datetime.datetime | None:
@@ -192,7 +212,7 @@ class Character(pydantic.BaseModel):
         return data
 
     @property
-    def max_life(self) -> int:
+    def life(self) -> int:
         if self.level < 9:
             return 145 + (self.level * 5)
 
@@ -206,7 +226,7 @@ class Character(pydantic.BaseModel):
         return delta * (self.level - 8) + 185
 
     @property
-    def max_mana(self) -> int:
+    def mana(self) -> int:
         if self.level < 9:
             return 50 + (self.level * 5)
 
@@ -217,4 +237,31 @@ class Character(pydantic.BaseModel):
         else:
             delta = 5
 
-        return delta * (self.level - 8) + 90
+        return int(delta * (self.level - 8)) + 90
+
+    @property
+    def promotion(self) -> bool:
+        return self.vocation in [Vocation.MS, Vocation.ED, Vocation.RP, Vocation.EK]
+
+    @property
+    def cap(self) -> int:
+        if self.level < 9:
+            return 390 + int(self.level * 10)
+
+        if self.vocation in [Vocation.EK, Vocation.K]:
+            delta = 25
+        elif self.vocation in [Vocation.RP, Vocation.P]:
+            delta = 20
+        else:
+            delta = 10
+
+        return int(delta * (self.level - 8)) + 470
+
+    @property
+    def min_sharing_lvl(self) -> int:
+        return utils.min_sharer(self.level)
+
+    @property
+    def max_sharing_lvl(self) -> int:
+        return utils.max_sharer(self.level)
+
