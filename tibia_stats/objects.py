@@ -264,4 +264,3 @@ class Character(pydantic.BaseModel):
     @property
     def max_sharing_lvl(self) -> int:
         return utils.max_sharer(self.level)
-

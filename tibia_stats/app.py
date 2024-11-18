@@ -104,11 +104,16 @@ def level_graph(char, online, show_vocation: bool, lvl_group: int):
     pct = api.top_percentage(online, char.level)
     title = f"Top {100*pct:.2f}% of {len(online)} Online Chars in {char.world.name}"
     hist_kw = {"color": "vocation"} if show_vocation else {}
+    try:
+        nbins = int(3000 / int(lvl_group))
+    except:
+        nbins = 60
+
     fig = px.histogram(
         chars,
         marginal="rug",
         x="level",
-        nbins=int(3000/lvl_group),
+        nbins=nbins,
         range_x=[0, 3000],
         # color_discrete_sequence=[char.world.color],
         title=title,
@@ -139,9 +144,19 @@ dash._dash_renderer._set_react_version("18.2.0")
 
 grid_options = dmc.Group(
     [
+        dmc.Select(
+            label="Level Group",
+            id="lvl-group",
+            data=[
+                {"value": str(x), "label": str(x)}
+                for x in [10, 20, 25, 50, 100, 200, 250, 500, 1000]
+            ],
+            value="50",
+            size="m",
+        ),
         dmc.Checkbox(label="Show vocation", id="show-vocation", checked=True),
-        dmc.Select(label="Level Group", id="lvl-group", data=[10, 25, 50, 100, 200], value=50),
-    ]
+    ],
+    align="flex-end",
 )
 
 app = dash.Dash()
@@ -155,7 +170,9 @@ app.layout = dmc.MantineProvider(
                         [
                             dmc.Group(
                                 [
-                                    dmc.TextInput(id="char-name", placeholder="Character name"),
+                                    dmc.TextInput(
+                                        id="char-name", placeholder="Character name"
+                                    ),
                                     dmc.Button("Submit", id="char-submit"),
                                 ]
                             ),
